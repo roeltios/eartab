@@ -3,6 +3,7 @@ const nextControl = document.getElementById("nextControl");
 const intervalLabel = document.getElementById("intervalLabel");
 const options = document.querySelectorAll(".option");
 const feedback = document.getElementById("feedback");
+let hasGuessed = false;
 
 const intervals = [
   { name: "Minor Second", semitones: 1 },
@@ -60,16 +61,49 @@ nextControl.addEventListener("click", () => {
   feedback.textContent = "";
   currentInterval = intervals[Math.floor(Math.random() * intervals.length)];
   intervalLabel.textContent = "—";
+  hasGuessed = false;
 });
 
 options.forEach(option => {
   option.addEventListener("click", () => {
-    if (!currentInterval) return;
+    if (!currentInterval || hasGuessed) return;
+    hasGuessed = true;
+
     const correct = option.textContent === currentInterval.name;
     feedback.textContent = correct
       ? "Correct."
       : `Incorrect. It was: ${currentInterval.name}`;
     feedback.style.color = correct ? "green" : "red";
     intervalLabel.textContent = currentInterval.name;
+    updateStats(correct);
   });
 });
+
+// Load stats from localStorage
+let stats = JSON.parse(localStorage.getItem("eartabStats")) || { correct: 0, total: 0 };
+
+// Update stats after each guess
+function updateStats(isCorrect) {
+  stats.total++;
+  if (isCorrect) stats.correct++;
+  localStorage.setItem("eartabStats", JSON.stringify(stats));
+  displayStats();
+}
+
+// Display stats in the UI
+function displayStats() {
+  const accuracy = stats.total ? Math.round((stats.correct / stats.total) * 100) : 0;
+  document.getElementById("statsText").textContent = `${stats.correct}/${stats.total} (${accuracy}%)`;
+}
+
+// Allow user to reset stats
+document.getElementById("resetStats").addEventListener("click", () => {
+  stats = { correct: 0, total: 0 };
+  localStorage.removeItem("eartabStats");
+  displayStats();
+  feedback.textContent = "Stats reset.";
+  feedback.style.color = "#666";
+});
+
+// Call once at load
+displayStats();
